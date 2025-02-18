@@ -1,6 +1,6 @@
 # FAIR² Portal Open Jupyter Notebooks
 
-Welcome to the repository for **Open Jupyter Notebooks** supporting the **FAIR² Data Packages**. Each notebook provides an example of how to access and analyze the **FAIR² Data Package** associated with published **Open Data Articles**. These notebooks demonstrate workflows for interacting with FAIR²-compliant datasets, enabling researchers to explore, visualize, and integrate data into their research.
+Welcome to the repository for **Open Jupyter Notebooks** supporting the **FAIR² Data Packages**. Each notebook provides an example of how to access and analyze the **FAIR² Data Package** associated with published **FAIR² Data Articles**. These notebooks demonstrate workflows for interacting with FAIR²-compliant datasets, enabling researchers to explore, visualize, and integrate data into their research.
 
 ## 📚 About FAIR² Data Packages
 
@@ -10,7 +10,7 @@ Welcome to the repository for **Open Jupyter Notebooks** supporting the **FAIR²
 - **Responsible AI Alignment**: Ensuring ethical and transparent data use.
 - **Context-Rich Documentation**: Including provenance, methodologies, and detailed descriptions to ensure deep reusability.
 
-These data packages accompany **Open Data Articles** and are designed to make datasets not only findable and reusable but also interpretable and ready for advanced analysis.
+These data packages accompany **FAIR² Data Articles** and are designed to make datasets not only findable and reusable but also interpretable and ready for advanced analysis.
 
 ## 🚀 Features of the Notebooks
 
@@ -25,7 +25,7 @@ Each notebook is stored in a directory that adheres to the following naming conv
 
 **Author-Year-Short Description**
 
-This structure allows easy identification of the associated Open Data Article.
+This structure allows easy identification of the associated FAIR² Data Article.
 
 ```plaintext
 /
@@ -98,7 +98,7 @@ You can open any notebook directly in **Google Colab** without setting up a loca
 
 ## 📘 Documentation
 
-For additional documentation on FAIR² and Open Data Articles, visit [fair-squared.ai](https://fair-squared.ai).
+For additional documentation on FAIR² and FAIR² Data Articles, visit [fair-squared.ai](https://fair-squared.ai).
 
 ## 🤝 Contribution Guidelines
 
