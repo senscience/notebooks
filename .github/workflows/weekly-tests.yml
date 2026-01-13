@@ -1,0 +1,16 @@
+name: Weekly Notebook Tests
+
+on:
+  schedule:
+    - cron: "0 12 * * 1"   # Mondays 12:00 UTC ≈ 7am ET (winter), 8am ET (summer)
+  workflow_dispatch:
+
+jobs:
+  weekly-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install -r requirements.txt
+      - run: pytest --nbmake --ignore=Heddema_MomCare_Tanzania/notebook.ipynb
