@@ -11,8 +11,8 @@ From the command line, to write a patched copy:
 
     python tools/patch_fair2.py <fair2.json URL or path> <output path>
 
-The newer export can't be read by mlcroissant (nor by croissant-duckdb, which reads metadata with
-it). The patch only adds or corrects, it removes nothing:
+The newer export can't be read by mlcroissant.
+The patch only adds or corrects, it removes nothing:
 
 - `@context`: a list holding one map becomes that map, with `@language` (required by mlcroissant,
   mlcommons/croissant#950) and the schema.org data types it doesn't define (e.g. DateTime; String,
