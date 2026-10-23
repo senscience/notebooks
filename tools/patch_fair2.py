@@ -12,7 +12,7 @@ From the command line, to write a patched copy:
     python tools/patch_fair2.py <fair2.json URL or path> <output path>
 
 The newer export can't be read by mlcroissant.
-The patch only adds or corrects, it removes nothing:
+The patch only adds or corrects, it removes nothing but the references that make a cycle:
 
 - `@context`: a list holding one map becomes that map, with `@language` (required by mlcroissant,
   mlcommons/croissant#950) and the schema.org data types it doesn't define (e.g. DateTime; String,
@@ -27,6 +27,12 @@ The patch only adds or corrects, it removes nothing:
   upload and its processed copy at the same URL, the copy (isBasedOn the upload). The column is
   the field's name. Names are compared and used decoded: they are written with %2F or +
   in some places ('First+cancer' is the column 'First cancer').
+- cycles: mlcroissant can't expand a node that loops back to itself, directly or through the nodes
+  it refers to. A reference back is removed: e.g. a place `geoWithin` the place whose
+  `containsPlace` it is, or two places that `geoTouches` each other; it repeats what is already
+  said the other way. A nested node with the id of a node containing it keeps its properties
+  without the id: e.g. the DOI identifier of the dataset, written with the dataset's @id, gets
+  the DOI as its value.
 
 The fix belongs to the export itself; this is a stopgap until it is fixed.
 """
@@ -140,12 +146,71 @@ def patch_record_sets(metadata, changes):
                           if len(matches) == 1 else f" no source ({len(matches)} matching files)"))
 
 
+def patch_cycles(metadata, changes):
+    """Removes the links that make a cycle when mlcroissant expands the metadata.
+
+    mlcroissant expands each node into its properties, and a reference ({"@id": ...}) into the
+    node it refers to: a link (reference, or nested copy) to a node it is expanding loops back.
+    """
+    definitions = {}
+
+    def collect(node):
+        if isinstance(node, list):
+            for item in node:
+                collect(item)
+        elif isinstance(node, dict):
+            if "@id" in node and len(node) > 1:
+                definitions.setdefault(node["@id"], node)
+            for key, value in node.items():
+                if key != "@context":
+                    collect(value)
+
+    def walk(node, expanding):
+        node_id = node.get("@id")
+        if node_id is not None and len(node) > 1:  # a definition, not a reference
+            expanding = expanding | {node_id}
+        for key, value in list(node.items()):
+            if key == "@context" or not isinstance(value, (dict, list)):
+                continue
+            values = value if isinstance(value, list) else [value]
+            back = [v for v in values if isinstance(v, dict) and v.get("@id") in expanding]
+            for v in [v for v in back if len(v) > 1]:
+                # A nested node with the id of a node containing it (e.g. the DOI identifier of
+                # the dataset, {"@id": <DOI>, "propertyID": "DOI"}): it keeps its properties,
+                # without the id, which becomes the value of an identifier
+                link = v.pop("@id")
+                if "propertyID" in v:
+                    v.setdefault("value", link)
+                changes.append(f"{key} of {node_id or 'a node'}: @id {link} of a node containing"
+                               " it removed")
+            back = [v for v in back if "@id" in v]
+            if back:
+                kept = [v for v in values if v not in back]
+                if isinstance(value, list) and kept:
+                    node[key] = kept
+                else:
+                    del node[key]
+                changes.append(f"{key} of {node_id or 'a node'}: link back to {back[0]['@id']}"
+                               " removed")
+            for v in values:
+                if not isinstance(v, dict) or v in back:
+                    continue
+                if set(v) == {"@id"} and v["@id"] in definitions:
+                    walk(definitions[v["@id"]], expanding)  # where mlcroissant goes next
+                else:
+                    walk(v, expanding)
+
+    collect(metadata)
+    walk(metadata, frozenset())
+
+
 def patch(metadata):
     """Patches the metadata in place, and returns the list of the changes."""
     changes = []
     patch_context(metadata, changes)
     patch_files(metadata, changes)
     patch_record_sets(metadata, changes)
+    patch_cycles(metadata, changes)
     return changes
 
 
