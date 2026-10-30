@@ -21,6 +21,8 @@ The patch only adds or corrects, it removes nothing but the references that make
 - `encodingFormat`: a charset ("utf-8") is replaced by the MIME type of the file's extension, or
   text/csv for a file without an extension based on a spreadsheet: the export writes each sheet as
   a CSV file. Other files without an extension keep their charset: their format isn't known.
+- `sha256`: a file without a checksum (mlcroissant requires one) gets the one in `SHA256`, computed
+  from the file served at its URL.
 - `source`: each field gets the file of its record set and its column. The file is the FileObject
   with the record set's name, or else the one whose path ends with it (in this export, the name is
   the file's path; a sheet of a spreadsheet can have the file name of another file): of an
@@ -54,6 +56,15 @@ SPREADSHEETS = (".xlsx", ".xls", ".ods")
 SCHEMA_TYPES = ["Boolean", "Date", "DateTime", "Float", "Integer", "Text", "Time", "URL"]
 # Data types of the export that aren't schema.org ones -> the schema.org type
 OTHER_TYPES = {"String": "Text"}
+# Files published without a checksum -> the sha256 of the file served at their URL (2026-10-26)
+SHA256 = {
+    "https://sen.science/doi/10.71728/senscience.vcs2-05nj/resources/record-sets/kenya_kilifi_w1_clean%282%29.csv":
+        "e7d6b1e88d94c7f48680ceeeec42e2fb59882eab830362526b7546c60430ccc9",
+    "https://sen.science/doi/10.71728/senscience.2ct8-xkdw/resources/record-sets/Antibiotic+Susceptibility+Analysis+-+2024+and+2025.csv":
+        "2d0d2517cc2fee02a488171514eaf64fd42fd2f75418d8158dda3d8e31936196",
+    "https://sen.science/doi/10.71728/senscience.vq4a-28xa/resources/record-sets/Protein+Abundance+Analysis+-+Homo+sapiens.csv":
+        "af59713d14be293972aa7ef9f7843280a6d971812022e0597e5af52d6ee1c0d8",
+}
 
 
 def load(source):
@@ -114,6 +125,10 @@ def patch_files(metadata, changes):
                 file_object["encodingFormat"] = mime
                 changes.append(f"file {path.rsplit('/', 1)[-1]}: encodingFormat"
                                f" {encoding_format!r} -> {mime!r}")
+        sha256 = SHA256.get(file_object.get("contentUrl"))
+        if sha256 and not (file_object.get("md5") or file_object.get("sha256")):
+            file_object["sha256"] = sha256
+            changes.append(f"file {decoded(file_object.get('name'))}: sha256 added")
 
 
 def rename_id(node):
