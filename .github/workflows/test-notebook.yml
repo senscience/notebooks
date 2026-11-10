@@ -1,28 +1,31 @@
-# Runs the notebook of a dataset from scratch, as on a first visit, with the test-notebook action of
-# fair2-sdk: the summary (time, downloads, errors...) is on the run's page, the report and the
-# executed notebook in an artifact. Started by hand: Actions > Test a notebook > Run workflow.
+# Runs the notebooks of datasets from scratch, as on a first visit, one after the other, with the
+# test-notebook action of fair2-sdk: the summary (time, downloads, errors...) is on the run's page,
+# the reports and the executed notebooks in an artifact. Started by hand: Actions > Test notebooks >
+# Run workflow.
 #
 # The same file in each environment's notebooks repository. The action follows fair2-sdk's main
 # for now (its latest notebook-runner), until fair2-sdk has releases to pin it to.
-name: Test a notebook
+name: Test notebooks
+# The DOIs can be many: in the summary, not in the names of the run and the job
+run-name: Test notebooks on ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
     inputs:
       doi:
-        description: "Dataset DOI, e.g. 10.71728/senscience.qs2f-h81p"
+        description: "Dataset DOI, e.g. 10.71728/senscience.qs2f-h81p, or several separated by spaces"
         required: true
         type: string
       notebook:
-        description: "Notebook file in the dataset's folder"
+        description: "Notebook file in each dataset's folder"
         default: notebook.ipynb
         type: string
       branch-patch:
-        description: "Use this branch's patch_fair2 instead of the one the notebook downloads"
+        description: "Use this branch's patch_fair2 instead of the one the notebooks download"
         default: true
         type: boolean
       skip-cells:
-        description: "Comma-separated ids of cells not to run (e.g. a widget needing a browser)"
+        description: "Comma-separated ids of cells not to run (with a single DOI)"
         default: ""
         type: string
 
@@ -31,7 +34,7 @@ permissions:
 
 jobs:
   test:
-    name: ${{ inputs.doi }}
+    name: Test the notebooks
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
