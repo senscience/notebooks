@@ -36,6 +36,7 @@ jobs:
   test:
     name: Test the notebooks
     runs-on: ubuntu-latest
+    # The notebooks run one after the other, each one in about a minute
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
