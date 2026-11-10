@@ -1,0 +1,67 @@
+# Runs the notebooks of the published datasets every week, as visitors get them, to notice when
+# they break without a change here (a new release of their dependencies, data or metadata changed):
+# the datasets whose DOI is findable on DataCite, with the patch_fair2 of main that the notebooks
+# download. One after the other, so that their measures don't interfere; the summary (a table of
+# the notebooks, the failed ones first) is on the run's page, the reports and the executed
+# notebooks in an artifact. Also started by hand: Actions > Test the published notebooks > Run
+# workflow.
+#
+# For the production notebooks repository only: the DOIs of the other environments are never made
+# findable. The action follows fair2-sdk's main for now, as in test-notebook.yml.
+name: Test the published notebooks
+
+on:
+  schedule:
+    - cron: "0 5 * * 1" # Mondays, 05:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-published-notebooks
+  cancel-in-progress: false
+
+env:
+  # Production: findable DOIs with this prefix, the folders of this repository
+  DATACITE_API: https://api.datacite.org
+  DOI_PREFIX: "10.71728"
+
+jobs:
+  test:
+    name: Test the published notebooks
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: List the published datasets
+        id: dois
+        shell: bash
+        run: |
+          # The public API only gives findable DOIs. One page, of 1000 at most (DataCite's
+          # maximum): beyond that, another approach than one weekly run of them all is needed.
+          page="$(curl -sSf --retry 3 "$DATACITE_API/dois?prefix=$DOI_PREFIX&sort=name&page%5Bsize%5D=1000&fields%5Bdois%5D=id")"
+          dois="$(jq -r '.data[].id' <<< "$page")"  # sort=name: by DOI
+          count="$(jq '.data | length' <<< "$page")"
+          total="$(jq '.meta.total' <<< "$page")"
+          if [ "$count" -eq 0 ]; then
+            echo "::error::No findable DOI with the prefix $DOI_PREFIX"; exit 1
+          fi
+          if [ "$total" -gt "$count" ]; then
+            echo "::warning::$total findable DOIs, only the first $count are tested"
+          fi
+          echo "$count published datasets:"; echo "$dois"
+          printf 'dois<<EOF\n%s\nEOF\n' "$dois" >> "$GITHUB_OUTPUT"
+
+      - uses: senscience/fair2-sdk/.github/actions/test-notebook@main
+        with:
+          doi: ${{ steps.dois.outputs.dois }}
+          # As visitors get them: the patch_fair2 of main, downloaded by the notebooks
+          branch-patch: "false"
+          # The packages are not downloaded again each week: the downloads measured are the data.
+          # GitHub removes a cache unused for 7 days: some weeks, it may be gone.
+          cache-dependencies: "true"
+          artifact-name: published-notebooks
