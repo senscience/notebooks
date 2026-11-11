@@ -1,10 +1,11 @@
 # Runs the notebooks of the published datasets every week, as visitors get them, to notice when
 # they break without a change here (a new release of their dependencies, data or metadata changed):
 # the datasets whose DOI is findable on DataCite, with the patch_fair2 of main that the notebooks
-# download. One after the other, so that their measures don't interfere; the summary (a table of
-# the notebooks, the failed ones first) is on the run's page, the reports and the executed
-# notebooks in an artifact. Also started by hand: Actions > Test the published notebooks > Run
-# workflow.
+# download. On Linux, macOS and Windows, as readers run them on their own machines too; on each,
+# one after the other, so that their measures don't interfere. The summaries (a table of the
+# notebooks, the failed ones first) are on the run's page, one per system, the reports and the
+# executed notebooks in an artifact per system. Also started by hand: Actions > Test the published
+# notebooks > Run workflow.
 #
 # For the production notebooks repository only: the DOIs of the other environments are never made
 # findable. The action follows fair2-sdk's main for now, as in test-notebook.yml.
@@ -28,16 +29,14 @@ env:
   DOI_PREFIX: "10.71728"
 
 jobs:
-  test:
-    name: Test the published notebooks
+  list:
+    # Once, for the three systems: the same list for each
+    name: List the published datasets
     runs-on: ubuntu-latest
-    # The notebooks run one after the other, each one in about a minute
-    timeout-minutes: 180
+    timeout-minutes: 5
+    outputs:
+      dois: ${{ steps.dois.outputs.dois }}
     steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-
       - name: List the published datasets
         id: dois
         shell: bash
@@ -57,12 +56,29 @@ jobs:
           echo "$count published datasets:"; echo "$dois"
           printf 'dois<<EOF\n%s\nEOF\n' "$dois" >> "$GITHUB_OUTPUT"
 
+  test:
+    name: Test the published notebooks (${{ matrix.os }})
+    needs: list
+    runs-on: ${{ matrix.os }}
+    # The notebooks run one after the other, each one in about a minute (two or three on Windows)
+    timeout-minutes: 180
+    strategy:
+      # Each system to the end, to see all their failures at once
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
       - uses: senscience/fair2-sdk/.github/actions/test-notebook@main
         with:
-          doi: ${{ steps.dois.outputs.dois }}
+          doi: ${{ needs.list.outputs.dois }}
           # As visitors get them: the patch_fair2 of main, downloaded by the notebooks
           branch-patch: "false"
           # The packages are not downloaded again each week: the downloads measured are the data.
           # GitHub removes a cache unused for 7 days: some weeks, it may be gone.
           cache-dependencies: "true"
-          artifact-name: published-notebooks
+          # One per system: their names must differ within a run
+          artifact-name: published-notebooks-${{ matrix.os }}
