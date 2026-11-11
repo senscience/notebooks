@@ -21,21 +21,15 @@ These data packages accompany **FAIR² Data Articles** and are designed to make 
 
 ## 📂 Repository Structure
 
-Each notebook is stored in a directory that adheres to the following naming convention:
-
-**Author-Year-Short Description**
-
-This structure allows easy identification of the associated FAIR² Data Article.
+Each notebook is stored in a directory named after the DOI of its FAIR² Data Package, which also identifies the associated FAIR² Data Article.
 
 ```plaintext
 /
-├── Author-Year-ShortDescription/  # Directory for a specific notebook
-│   ├── notebook.ipynb             # The Jupyter Notebook
-│   ├── README.md                  # Summary of the notebook and related data
-│   └── LICENSE                    # License for the notebook
-├── requirements.txt               # Python dependencies for running notebooks
+├── 10.71728/
+│   └── senscience.qs2f-h81p/      # Directory for the dataset 10.71728/senscience.qs2f-h81p
+│       └── notebook.ipynb         # The Jupyter Notebook
 ├── README.md                      # This file
-└── LICENSE.md                     # License for the repository
+└── LICENSE                        # License for the repository
 ```
 
 ## 🛠️ Getting Started
@@ -44,9 +38,8 @@ This structure allows easy identification of the associated FAIR² Data Article.
 
 To use the notebooks, ensure you have the following installed:
 
-- Python (>=3.8)
+- Python (>=3.11)
 - Jupyter Notebook or JupyterLab
-- Dependencies listed in `requirements.txt`
 
 ### Installation
 
@@ -57,21 +50,13 @@ To use the notebooks, ensure you have the following installed:
    cd notebooks
    ```
 
-2. **Install Dependencies:**
-
-   Use `pip` to install required Python packages:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Launch Jupyter:**
+2. **Launch Jupyter:**
 
    ```bash
    jupyter notebook
    ```
 
-   Open the desired notebook file from its corresponding directory to start exploring.
+   Open the desired notebook file from its corresponding directory to start exploring. Each notebook installs the Python packages it needs in its first cell.
 
 ### Running in Google Colab
 
@@ -89,7 +74,7 @@ You can open any notebook directly in **Google Colab** without setting up a loca
    - Alternatively, you can directly modify the URL to prepend `https://colab.research.google.com/github/`.  
      For example:  
      ```text
-     https://colab.research.google.com/github/senscience/notebooks/Author-Year-ShortDescription/notebook.ipynb
+     https://colab.research.google.com/github/senscience/notebooks/blob/main/10.71728/senscience.qs2f-h81p/notebook.ipynb
      ```
 
 3. **Run the Notebook:**
