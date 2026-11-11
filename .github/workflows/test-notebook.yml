@@ -1,7 +1,7 @@
 # Runs the notebooks of datasets from scratch, as on a first visit, one after the other, with the
-# test-notebook action of fair2-sdk: the summary (time, downloads, errors...) is on the run's page,
-# the reports and the executed notebooks in an artifact. Started by hand: Actions > Test notebooks >
-# Run workflow.
+# test-notebook action of fair2-sdk, on Linux, macOS, Windows or all three: the summary (time,
+# downloads, errors...) is on the run's page, the reports and the executed notebooks in an artifact,
+# one per system. Started by hand: Actions > Test notebooks > Run workflow.
 #
 # The same file in each environment's notebooks repository. The action follows fair2-sdk's main
 # for now (its latest notebook-runner), until fair2-sdk has releases to pin it to.
@@ -28,16 +28,30 @@ on:
         description: "Comma-separated ids of cells not to run (with a single DOI)"
         default: ""
         type: string
+      os:
+        description: "System of the runner"
+        default: ubuntu-latest
+        type: choice
+        options:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+          - all
 
 permissions:
   contents: read
 
 jobs:
   test:
-    name: Test the notebooks
-    runs-on: ubuntu-latest
-    # The notebooks run one after the other, each one in about a minute
+    name: Test the notebooks (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    # The notebooks run one after the other, each one in about a minute (two or three on Windows)
     timeout-minutes: 60
+    strategy:
+      # Each system to the end, to see all their failures at once
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.os == 'all' && '["ubuntu-latest", "macos-latest", "windows-latest"]' || format('["{0}"]', inputs.os)) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -48,3 +62,5 @@ jobs:
           notebook: ${{ inputs.notebook }}
           branch-patch: ${{ inputs.branch-patch }}
           skip-cells: ${{ inputs.skip-cells }}
+          # One per system: their names must differ within a run
+          artifact-name: notebook-run-${{ matrix.os }}
