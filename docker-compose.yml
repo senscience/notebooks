@@ -1,0 +1,18 @@
+# JupyterLab on the notebooks of this repository:
+#   docker compose up
+# then open the http://127.0.0.1:8888/lab?token=... URL it prints (or set JUPYTER_TOKEN beforehand).
+#
+# Like Colab, the image comes with the scientific stack (pandas, scipy, matplotlib, seaborn...): a
+# notebook that uses one of them without installing it runs here but not in a plain Python
+# environment.
+services:
+  jupyter:
+    image: quay.io/jupyter/scipy-notebook:2026-10-12
+    ports:
+      # Only reachable from this machine.
+      - "127.0.0.1:8888:8888"
+    environment:
+      - JUPYTER_TOKEN
+    volumes:
+      - .:/home/jovyan/work
+    working_dir: /home/jovyan/work
