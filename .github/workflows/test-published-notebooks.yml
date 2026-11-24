@@ -7,6 +7,10 @@
 # executed notebooks in an artifact per system. Also started by hand: Actions > Test the published
 # notebooks > Run workflow.
 #
+# Then a message to a Teams chat, after every run: all good, or the failed notebooks with their
+# first error (.github/scripts/notify_teams.py). Through a Workflows webhook ("Send webhook alerts
+# to a chat"), its URL in the secret TEAMS_WEBHOOK; without it, the message is only in the job's log.
+#
 # For the production notebooks repository only: the DOIs of the other environments are never made
 # findable. The action follows fair2-sdk's main for now, as in test-notebook.yml.
 name: Test the published notebooks
@@ -82,3 +86,39 @@ jobs:
           cache-dependencies: "true"
           # One per system: their names must differ within a run
           artifact-name: published-notebooks-${{ matrix.os }}
+
+  notify:
+    name: Tell the Teams chat
+    needs: [list, test]
+    # After every run, whatever its outcome
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      # When the run started, for how long it took
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - uses: actions/download-artifact@v8
+        # No artifact at all when no system ran: the message says so, it must still be posted
+        continue-on-error: true
+        with:
+          pattern: published-notebooks-*
+          path: reports
+
+      - name: Post the results
+        env:
+          TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SYSTEMS: ubuntu-latest macos-latest windows-latest
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # How long the run took, from its start; the message goes without it if this fails
+          RUN_STARTED="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --jq .run_started_at || true)"
+          export RUN_STARTED
+          python3 -I .github/scripts/notify_teams.py reports
